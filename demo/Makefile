@@ -20,8 +20,8 @@ sink: build-sinks
 	--env MONGO_DATABASE=registry \
 	--name=sinks sinks:latest \
 	--schema_name featuregroup-mnist  \
-	--start_time 2022-12-20T17:58:23 \
-	--end_time 2022-12-20T17:58:26 \
+	--start_time 2022-12-21T14:16:44 \
+	--end_time 2022-12-21T14:16:47 \
 	--timestamp_field timestamp \
 	--queue_name mnist \
 
