@@ -14,3 +14,6 @@ RUN pip3 install -r requirements.txt
 
 # Fix h3 lib
 COPY h3/out /opt/conda/lib/python3.9/site-packages/h3/
+
+# Update workdir
+WORKDIR /
