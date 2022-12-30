@@ -1,4 +1,0 @@
-kafka-python
-faker
-pandas
-cassandra-driver
