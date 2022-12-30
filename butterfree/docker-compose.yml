@@ -76,7 +76,7 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
     volumes:
-      - ./minio_data:/data
+      - ./minio:/data
     ports:
       - 9000:9000
       - 9001:9001
@@ -93,15 +93,15 @@ services:
       /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
       /usr/bin/mc rb --force myminio/featurestore;
       /usr/bin/mc mb myminio/featurestore;
-      /usr/bin/mc policy set public myminio/featurestore;
+      /usr/bin/mc anonymous set public myminio/featurestore;
       exit 0;
       "
 
-  pyspark-jupyter:
-    build:
-      context: ./pyspark-jupyter
-    image: hoangph3/pyspark-jupyter:3.2.0
-    container_name: pyspark-jupyter
-    hostname: pyspark-jupyter
+  pyspark-notebook:
+    image: hoangph3/pyspark-notebook:3.2.0-fs
+    container_name: pyspark-notebook
+    hostname: pyspark-notebook
     ports:
-    - 8889:8888
+      - 8888:8888
+    volumes:
+      - ./pyspark-notebook:/home/jovyan/work
