@@ -9,6 +9,10 @@ __pycache__/
 # zip
 *.tar.gz
 
+# mount volumes
+minio/
+.minio.*
+
 # Distribution / packaging
 .Python
 build/
