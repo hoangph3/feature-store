@@ -5,6 +5,7 @@ from typing import Any
 
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import dayofmonth, month, year
+from pyspark.sql.streaming import StreamingQuery
 
 from butterfree.clients import SparkClient
 from butterfree.configs import environment
@@ -111,11 +112,12 @@ class HistoricalFeatureStoreWriter(Writer):
         num_partitions: int = None,
         validation_threshold: float = DEFAULT_VALIDATION_THRESHOLD,
         debug_mode: bool = False,
+        write_to_entity: bool = False,
         interval_mode: bool = False,
         check_schema_hook: Hook = None,
     ):
         super(HistoricalFeatureStoreWriter, self).__init__(
-            db_config or MetastoreConfig(), debug_mode, interval_mode
+            db_config or MetastoreConfig(), debug_mode, interval_mode, write_to_entity
         )
         self.database = database or environment.get_variable(
             "FEATURE_STORE_HISTORICAL_DATABASE"
@@ -124,9 +126,41 @@ class HistoricalFeatureStoreWriter(Writer):
         self.validation_threshold = validation_threshold
         self.check_schema_hook = check_schema_hook
 
+    def _write_stream(
+        self,
+        feature_set: FeatureSet,
+        dataframe: DataFrame,
+        spark_client: SparkClient,
+        s3_key: str,
+    ) -> StreamingQuery:
+        """Writes the dataframe in streaming mode."""
+        checkpoint_folder = (
+            f"{feature_set.name}__on_entity" if self.write_to_entity else feature_set.name
+        )
+        checkpoint_path = (
+            os.path.join(
+                self.db_config.stream_checkpoint_path,
+                feature_set.entity,
+                checkpoint_folder,
+            )
+            if self.db_config.stream_checkpoint_path
+            else None
+        )
+        streaming_handler = spark_client.write_stream_table(
+            dataframe,
+            processing_time=self.db_config.stream_processing_time,
+            output_mode=self.db_config.stream_output_mode,
+            checkpoint_path=checkpoint_path,
+            database=self.database,
+            table_name=feature_set.name,
+            partition_by=self.PARTITION_BY,
+            **self.db_config.get_options(s3_key)
+        )
+        return streaming_handler
+
     def write(
         self, feature_set: FeatureSet, dataframe: DataFrame, spark_client: SparkClient,
-    ) -> None:
+    ) -> StreamingQuery:
         """Loads the data from a feature set into the Historical Feature Store.
 
         Args:
@@ -143,6 +177,8 @@ class HistoricalFeatureStoreWriter(Writer):
 
         dataframe = self._apply_transformations(dataframe)
 
+        s3_key = os.path.join("historical", feature_set.entity, feature_set.name)
+
         if self.interval_mode:
             partition_overwrite_mode = spark_client.conn.conf.get(
                 "spark.sql.sources.partitionOverwriteMode"
@@ -156,16 +192,20 @@ class HistoricalFeatureStoreWriter(Writer):
                     "be configured to 'dynamic'".format(partition_overwrite_mode)
                 )
 
-        if self.debug_mode:
-            spark_client.create_temporary_view(
+        if dataframe.isStreaming:
+            if self.debug_mode:
+                return spark_client.create_temporary_view(
+                    dataframe=dataframe,
+                    name=f"historical_feature_store__{feature_set.name}",
+                )
+            return self._write_stream(
+                feature_set=feature_set,
                 dataframe=dataframe,
-                name=f"historical_feature_store__{feature_set.name}",
+                spark_client=spark_client,
+                s3_key=s3_key,
             )
-            return
 
-        s3_key = os.path.join("historical", feature_set.entity, feature_set.name)
-
-        spark_client.write_table(
+        return spark_client.write_table(
             dataframe=dataframe,
             database=self.database,
             table_name=feature_set.name,

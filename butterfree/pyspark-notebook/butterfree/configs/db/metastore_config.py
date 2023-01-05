@@ -29,11 +29,17 @@ class MetastoreConfig(AbstractWriteConfig):
         mode: str = None,
         format_: str = None,
         file_system: str = None,
+        stream_processing_time: str = None,
+        stream_output_mode: str = None,
+        stream_checkpoint_path: str = None,
     ):
         self.path = path
         self.mode = mode
         self.format_ = format_
         self.file_system = file_system
+        self.stream_processing_time = stream_processing_time
+        self.stream_output_mode = stream_output_mode
+        self.stream_checkpoint_path = stream_checkpoint_path
 
     @property
     def database(self) -> str:
@@ -75,6 +81,35 @@ class MetastoreConfig(AbstractWriteConfig):
     @file_system.setter
     def file_system(self, value: str) -> None:
         self.__file_system = value or "s3a"
+
+    @property
+    def stream_processing_time(self) -> Optional[str]:
+        """Processing time interval for streaming jobs."""
+        return self.__stream_processing_time
+
+    @stream_processing_time.setter
+    def stream_processing_time(self, value: str) -> None:
+        self.__stream_processing_time = value or "0 seconds"
+
+    @property
+    def stream_output_mode(self) -> Optional[str]:
+        """Specify the mode from writing streaming data."""
+        return self.__stream_output_mode
+
+    @stream_output_mode.setter
+    def stream_output_mode(self, value: str) -> None:
+        self.__stream_output_mode = value or "append"
+
+    @property
+    def stream_checkpoint_path(self) -> Optional[str]:
+        """Path on S3 to save checkpoints for the stream job."""
+        return self.__stream_checkpoint_path
+
+    @stream_checkpoint_path.setter
+    def stream_checkpoint_path(self, value: str) -> None:
+        self.__stream_checkpoint_path = value or environment.get_variable(
+            "STREAM_CHECKPOINT_PATH"
+        )
 
     def get_options(self, key: str) -> Dict[Optional[str], Optional[str]]:
         """Get options for Metastore.
