@@ -16,7 +16,7 @@ services:
   hive-metastore:
     build:
       context: ./hive-metastore
-    image: hoangph3/hive-metastore:3.0.0
+    image: hoangph3/hive-metastore:3.0.0-mariadb
     container_name: hive-metastore
     hostname: hive-metastore
     ports:
@@ -75,8 +75,8 @@ services:
     environment:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
-    volumes:
-      - ./minio:/data
+    # volumes:
+      # - ./minio:/data
     ports:
       - 9000:9000
       - 9001:9001
