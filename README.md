@@ -11,4 +11,4 @@ A feature store can help with both performing feature computation and storing th
 - Feature consistency:
 A key selling point of modern feature stores is that they unify the logic for both batch features and streaming features, ensuring the consistency between features during training and features during inference.
 
-![Source: https://www.tecton.ai/blog/what-is-a-feature-store/](feature-store.png)
+![Source: https://www.tecton.ai/blog/what-is-a-feature-store/](feature-store.svg)
